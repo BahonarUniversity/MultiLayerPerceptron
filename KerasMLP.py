@@ -33,7 +33,7 @@ class UseKerasToLearn:
         for i in range(7):
             self.model.add(Dense(32, activation=tf.keras.activations.tanh))
             self.model.add(Dropout(0.2))
-        for i in range(1):
+        for i in range(0):
             self.model.add(Dense(24, activation=tf.keras.activations.tanh))
             self.model.add(Dropout(0.2))
         self.model.add(Dense(self.train_outputs.shape[1], activation=tf.keras.activations.softmax))

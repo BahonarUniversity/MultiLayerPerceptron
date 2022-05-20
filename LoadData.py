@@ -40,17 +40,32 @@ def one_hot(input_df):
         # input_df.loc[input_df == output_set[i]] = i
     return output_df
 
+
 def add_noise(data, noise: float):
     noisy_inputs = data.copy()
     changes = 0
-    print(noisy_inputs)
     for i in range(noisy_inputs.shape[0]):
         for j in range(noisy_inputs.shape[1]):
             if random.random() < noise / 2.0:
-                print('i:', i)
-                print('j:', j)
-                print('noisy_inputs:', noisy_inputs.shape)
                 noisy_inputs.iloc[i, j] *= -1
                 changes += 1
+    print('changes by noise: ', changes)
+    return noisy_inputs
+
+
+def add_noise_to_images(data, noise: float):
+    noisy_inputs = data.copy()
+    if noise == 0:
+        return noisy_inputs
+    changes = 0
+    for i in range(noisy_inputs.shape[0]):
+        img = noisy_inputs[i]
+        for j in range(img.shape[0]):
+            for k in range(img.shape[1]):
+                pixel = img[j][k]
+                if pixel < 0.8:
+                    if random.random() < noise / 2.0:
+                        img[j][k] *= -1
+                        changes += 1
     print('changes by noise: ', changes)
     return noisy_inputs

@@ -16,9 +16,7 @@ class FilterFunction(ABC):
 
 class ImageFilter:
 
-    def __init__(self, filter_size: int, stride: int, filter_functions: List[FilterFunction]):
-        self.filter_size = filter_size
-        self.stride = stride
+    def __init__(self, filter_functions: List[FilterFunction]):
         self.filter_functions: List[FilterFunction] = filter_functions
 
     def run(self, data_frame: pd.DataFrame):
@@ -95,6 +93,37 @@ class Convolution(FilterFunction):
         # plt.imshow(target_data)
         # plt.show()
         return target_data
+
+
+# need more work
+class ParallelFilters(FilterFunction):
+    def __init__(self, filters: List[List[FilterFunction]]):
+        self.convolution_filters = filters
+
+    def run(self, data_frame: pd.DataFrame):
+        filtered_dfs = []
+        for i in range(len(self.convolution_filters)):
+            new_df = data_frame
+            for j in range(len(self.convolution_filters[i])):
+                new_df = self.convolution_filters[i][j].run(new_df)
+            filtered_dfs.append(new_df)
+
+        return self.flatten_data_frames(filtered_dfs)
+
+    def flatten_data_frames(self, filtered_data: pd.DataFrame):
+        size = 0
+        for i in range(len(filtered_data[0])):
+            size += np.array(filtered_data[0][i]).flatten().shape[0]
+
+        data_array = np.zeros((len(filtered_data), size))
+        for i in range(data_array.shape[0]):
+            flatten_data = np.ndarray((0,))
+            for j in range(len(filtered_data[0])):
+                np.concatenate(flatten_data, np.array(filtered_data[i][j]).flatten())
+            data_array[i] = flatten_data
+        return data_array
+
+
 
 
 class Flatten(FilterFunction):

@@ -6,11 +6,11 @@ import pandas as pd
 
 from ActivationFunctions import BipolarSigmoid, ReluFunction, BipolarFunction, IdentityFunction, BinarySigmoid, \
     BinaryFunction
-from ImageFilter import ImageFilter, Convolution, Flatten, Mapping, PCAFeatureExtraction, LetterSizeFeatureExtraction
+from ImageFilter import ImageFilter, Convolution, Flatten, Mapping, PCAFeatureExtraction, LetterSizeFeatureExtraction, \
+    ParallelFilters
 from MLPNeuralNetwork import MLPNeuralNetwork
-from SKLearnMLP import classify_by_sklearn_mlp
 from Utilities import HiddenLayersStructure, LearningMode, make_gaussian
-from LoadData import load_data, add_noise
+from LoadData import load_data, add_noise, add_noise_to_images
 from LoadImages import read_image_data_text
 
 from DrawDiagram import draw_plot
@@ -66,11 +66,10 @@ def mlp_for_project_3(learning_rate=-1, hidden_layer_neurons: [] = [8, 8], epoch
     convolution_filter = make_gaussian(-1, 1, conv_size)
     convolution_filter2 = np.array([[1, 0, 1], [1, 0, 1], [1, 0, 1]])
     # convolution_filter = np.ones((conv_size, conv_size))
-    filters = ImageFilter(5, 0, filter_functions=[
+    filters = ImageFilter(filter_functions=[
                                                     # LetterSizeFeatureExtraction(),
-                                                  Convolution(convolution_filter, 0, conv_size)
                                                   # , Mapping([1, 0])
-                                                  # , Convolution(convolution_filter2, 0, conv_size)
+                                                  Convolution(convolution_filter2, 0, conv_size)
                                                   , Flatten()
                                                   # , PCAFeatureExtraction(n_component=8)
                                                   , Mapping([-1, 1])
@@ -92,34 +91,40 @@ def mlp_for_project_3(learning_rate=-1, hidden_layer_neurons: [] = [8, 8], epoch
     print('\n accuracy= ', accuracy, '\n')
 
 
-def mlp_for_project_3_with_keras(learning_rate=-1, hidden_layer_neurons: [] = [8, 8], epochs: int = 10,
-                                 noise_step: float = 0.2):
+def mlp_for_project_3_with_keras(epochs: int = 10, noise_step: float = 0.2):
     train_input, train_output, test_input, test_output = read_image_data_text('farsi7.txt', 95, 95, image_size=40)
-
     conv_size = 10
     convolution_filter = make_gaussian(-1, 1, conv_size)
-    convolution_filter2 = np.array([[1, 0, 1], [1, 0, 1], [1, 0, 1]])
-    # convolution_filter = np.ones((conv_size, conv_size))
-    filters = ImageFilter(5, 0, filter_functions=[
+    filters = ImageFilter(filter_functions=[
                                                   Convolution(convolution_filter, 0, conv_size)
-                                                  # , Mapping([1, 0])
-                                                  # , Convolution(convolution_filter2, 0, conv_size)
                                                   , Flatten()
-                                                  # , PCAFeatureExtraction(n_component=16)
                                                   , Mapping([-1, 1])
                                                   ])
+
     mean_accuracy = 0
-    for i in range(5):
+    for i in range(3):
         mlp = UseKerasToLearn(train_input, train_output, filters)
         mlp.train(epochs, mode=LearningMode.Incremental)
         accuracy = mlp.evaluate(train_input, train_output)
         mean_accuracy += accuracy
-    mean_accuracy = mean_accuracy / 5
+    mean_accuracy = mean_accuracy / 3
+    print('\n Mean accuracy on train data= ', mean_accuracy, '\n')
 
-    # accuracy = classify_by_sklearn_mlp(train_input, train_output, test_input, test_output, filters)
-    print('\n train accuracy= ', mean_accuracy, '\n')
-    accuracy = mlp.evaluate(test_input, test_output)
-    print('\n test accuracy= ', mean_accuracy, '\n')
+    accuracies = []
+    x_values = np.arange(0, 1, noise_step)
+    for noise in x_values:
+        print('\nNoise =', noise, ' :\n')
+        mean_accuracy = 0
+        noisy_input = add_noise_to_images(train_input, noise)
+        for i in range(3):
+            mlp = UseKerasToLearn(noisy_input, train_output, filters)
+            mlp.train(epochs, mode=LearningMode.Incremental)
+            accuracy = mlp.evaluate(test_input, test_output)
+            mean_accuracy += accuracy
+        mean_accuracy = mean_accuracy / 3
+        accuracies.append(mean_accuracy)
+        print(f'\n Mean accuracy on test data and {noise} noise= {mean_accuracy}\n')
+    draw_plot(x_values, accuracies)
 
 
 # Press the green button in the gutter to run the script.
@@ -127,5 +132,5 @@ if __name__ == '__main__':
     # mlp_for_project_2(use_iris=True, hidden_layer_neurons=8, epochs=50,
     #                   noise_step=0.2, learning_rate=0.2, show_logs=False)
     # mlp_for_project_3(hidden_layer_neurons=[32, 32, 32, 24], epochs=400, noise_step=0.5, show_logs=False)
-    mlp_for_project_3_with_keras(epochs=1000, noise_step=0.5)
+    mlp_for_project_3_with_keras(epochs=1000, noise_step=0.1)
 
